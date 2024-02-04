@@ -11,11 +11,11 @@ services:
     depends_on:
       - postgers
 
-  budget_bot:
-    build:
-      context: .
-      dockerfile: system/Dockerfile
-    command: python app/api/bot/run.py
+#  budget_bot:
+#    build:
+#      context: .
+#      dockerfile: system/Dockerfile
+#    command: python app/api/bot/run.py
 
 
   postgers:
