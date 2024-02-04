@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "budget_bot"
+version = "1.0"
+description = "Budget bot"
+authors = ["ser.matyushenok@gmail.com"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "~3.10"
+asyncpg = "0.27.0"
+fastapi = "0.95.0"
+aerich = "0.6.3"
+tortoise-orm = "0.19.3"
+uvicorn = "0.21.1"
+gunicorn = "^21.2.0"
+PyJWT = "2.6.0"
+telebot = "^0.0.5"
+
+[tool.poetry.group.uvloop.dependencies]
+uvloop = "^0.17.0"
+
+[tool.aerich]
+tortoise_orm = "app.aerich.base.config"
+location = "./migrations"
+src_folder = "./."
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
