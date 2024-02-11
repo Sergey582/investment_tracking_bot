@@ -1,17 +1,20 @@
+import os
+
 from app.api.public.modules.assets.serializers import (AssetResponse,
                                                        AssetsListData,
                                                        CreateAssetRequest,
                                                        CurrenciesListData,
                                                        ExpensesQueryFilters,
-                                                       Pagination)
+                                                       Pagination, AssetHistoryResponse, AssetHistoryListResponse)
 from app.core.modules.assets.models import User
 from app.core.modules.assets.services import (create_asset, delete_asset,
                                               get_all_currencies, get_asset,
-                                              get_assets, get_last_asset_id)
+                                              get_assets, get_last_asset_id, get_asset_history)
 from app.core.modules.users.auth import user_auth_check
 from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
 from starlette.responses import Response
+from fastapi import FastAPI, Response
 
 router = APIRouter()
 
@@ -24,9 +27,11 @@ router = APIRouter()
     status_code=status.HTTP_200_OK,
 )
 async def router_get_all_categories(
+        response: Response,
         user: User = Depends(user_auth_check),
 ):
     data = get_all_currencies()
+    response.headers["Access-Control-Allow-Origin"] = os.environ["host"]
     return CurrenciesListData(data=data)
 
 
@@ -48,35 +53,45 @@ async def router_create_asset(
         price=request_data.price,
         transaction_date=request_data.transaction_date,
     )
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    r = Response(status_code=status.HTTP_204_NO_CONTENT)
+    r.headers["Access-Control-Allow-Origin"] = os.environ["host"]
+    return r
 
 
 @router.get(
-    "/assets/{asset_id}",
+    "/assets/{asset_name}",
     tags=["asset"],
-    summary="Get asset by id",
+    summary="Get asset by asset_name",
     response_model=AssetResponse,
     status_code=status.HTTP_200_OK,
 )
 async def router_get_asset_by_id(
-        asset_id: int,
+        response: Response,
+        asset_name: str,
         user: User = Depends(user_auth_check),
 ):
-    asset = await get_asset(asset_id=asset_id, user=user)
-    if not asset:
+    asset = await get_asset(asset_name=asset_name, user=user)
+    response.headers["Access-Control-Allow-Origin"] = os.environ["host"]
+    if asset is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="expense id does not exist")
-    return AssetResponse(
-        currency=asset.currency,
-        number=asset.number,
-        name=asset.name,
-        price=asset.price,
-        average_price=12.3,
-        daily_pnl="test",
-        total_pnl="test",
-        transaction_date=asset.transaction_date,
-        created_at=asset.created_at,
-        updated_at=asset.updated_at,
-    )
+    return AssetResponse(**asset)
+
+
+@router.get(
+    "/assets/{asset_name}/history",
+    tags=["asset"],
+    summary="Get asset history",
+    response_model=AssetHistoryListResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def router_get_asset_by_id(
+        response: Response,
+        name: str,
+        user: User = Depends(user_auth_check),
+):
+    assets = await get_asset_history(asset_name=name, user=user)
+    response.headers["Access-Control-Allow-Origin"] = os.environ["host"]
+    return AssetHistoryListResponse(assets=assets)
 
 
 #
@@ -111,11 +126,14 @@ async def router_get_asset_by_id(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def router_delete_expense(
+        response: Response,
         asset_id: int,
         user: User = Depends(user_auth_check),
 ):
     await delete_asset(asset_id=asset_id, user=user)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    r = Response(status_code=status.HTTP_204_NO_CONTENT)
+    r.headers["Access-Control-Allow-Origin"] = os.environ["host"]
+    return r
 
 
 @router.get(
@@ -126,6 +144,7 @@ async def router_delete_expense(
     status_code=status.HTTP_200_OK,
 )
 async def router_get_assets(
+        response: Response,
         pagination: Pagination = Depends(),
         filters: ExpensesQueryFilters = Depends(),
         user: User = Depends(user_auth_check),
@@ -139,5 +158,5 @@ async def router_get_assets(
     )
 
     messages, next_id = get_last_asset_id(messages, pagination.limit)
-
+    response.headers["Access-Control-Allow-Origin"] = os.environ["host"]
     return AssetsListData(messages=messages, next_id=next_id)

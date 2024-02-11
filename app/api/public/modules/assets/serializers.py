@@ -28,9 +28,18 @@ class AssetResponse(BaseModel):
     daily_pnl: str
     total_pnl: str
     average_price: float
-    transaction_date: Optional[datetime] = None
+
+
+class AssetHistoryResponse(BaseModel):
+    number: float
+    price: float
+    name: str
+    currency: str
     created_at: datetime
-    updated_at: datetime
+
+
+class AssetHistoryListResponse(BaseModel):
+    assets: List[AssetHistoryResponse]
 
 
 class Pagination(BaseModel):
