@@ -31,7 +31,6 @@ async def router_get_all_categories(
         user: User = Depends(user_auth_check),
 ):
     data = get_all_currencies()
-    response.headers["Access-Control-Allow-Origin"] = os.environ["host"]
     return CurrenciesListData(data=data)
 
 
@@ -71,7 +70,6 @@ async def router_get_asset_by_id(
         user: User = Depends(user_auth_check),
 ):
     asset = await get_asset(asset_name=asset_name, user=user)
-    response.headers["Access-Control-Allow-Origin"] = os.environ["host"]
     if asset is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="expense id does not exist")
     return AssetResponse(**asset)
@@ -90,7 +88,6 @@ async def router_get_asset_by_id(
         user: User = Depends(user_auth_check),
 ):
     assets = await get_asset_history(asset_name=name, user=user)
-    response.headers["Access-Control-Allow-Origin"] = os.environ["host"]
     return AssetHistoryListResponse(assets=assets)
 
 
@@ -158,5 +155,4 @@ async def router_get_assets(
     )
 
     messages, next_id = get_last_asset_id(messages, pagination.limit)
-    response.headers["Access-Control-Allow-Origin"] = os.environ["host"]
     return AssetsListData(messages=messages, next_id=next_id)
