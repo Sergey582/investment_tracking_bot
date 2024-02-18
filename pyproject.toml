@@ -15,6 +15,7 @@ uvicorn = "0.21.1"
 gunicorn = "^21.2.0"
 PyJWT = "2.6.0"
 telebot = "^0.0.5"
+cachetools = "5.3.2"
 
 [tool.poetry.group.uvloop.dependencies]
 uvloop = "^0.17.0"

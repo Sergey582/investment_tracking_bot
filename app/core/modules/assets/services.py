@@ -1,10 +1,13 @@
+from collections import defaultdict
 from datetime import datetime
-from linecache import cache
 from typing import List, Optional, Dict
 
 from app.core.modules.assets.constants import CURRENCIES
 from app.core.modules.assets.models import Asset, User
 from app.core.modules.binance.client import binance_client
+from cachetools import TTLCache
+
+cache = TTLCache(maxsize=10, ttl=60)
 
 
 async def create_asset(
@@ -26,10 +29,10 @@ async def create_asset(
 
 
 def get_assets_prices(assets_names: List[str]) -> Dict[str, float]:
-    assets_prices = cache.get("assets_prices")
-    if not assets_prices:
-        assets_prices = binance_client.get_assets_prices(assets_names=[assets_names])
-    cache.setdefault("assets_prices", assets_prices)
+    # assets_prices = cache.get("assets_prices")
+    # if not assets_prices:
+    assets_prices = binance_client.get_assets_prices(assets_names=assets_names)
+    # cache.setdefault("assets_prices", assets_prices)
     return assets_prices
 
 
@@ -56,16 +59,19 @@ async def get_asset(user: User, asset_name: str, ) -> Optional[dict]:
         asset_sum += asset.number * asset.price
         asset_number += asset.number
 
-    # current_asset_price = get_assets_prices(assets_names=[asset_name, ])[asset_name]
+    current_asset_price = get_assets_prices(assets_names=[asset_name, ]).get(f"{asset_name}USDT", 0)
+    pnl_info = binance_client.get_daily_pnl(assets_names=[asset_name]).get(f"{asset_name}USDT", 0)
 
     asset_info = {
         "currency": asset.currency,
-        "number": asset_number,
+        "number": round(asset_number, 5),
         "name": asset_name,
-        "price": 1,  # current_asset_price,
-        "average_price": asset_sum / asset_number,
-        "daily_pnl": "test",
-        "total_pnl": 1,  # asset_sum - asset_number * current_asset_price,
+        "price": current_asset_price,
+        "total_sum": round(asset_number * current_asset_price, 5),
+        "average_price": round(asset_sum / asset_number, 3),
+        "total_pnl": round(asset_number * current_asset_price - asset_sum, 3),
+        'daily_pnl': round(pnl_info and pnl_info['price_change'] * asset_number, 3),
+        'daily_percent_pnl': pnl_info and pnl_info['price_change_percent'],
     }
     return asset_info
 
@@ -97,23 +103,27 @@ async def get_assets(
 
     assets = await assets_query
 
-    # assets_names = [asset.name for asset in assets]
-    # assets_prices = binance_client.get_assets_prices(assets_names=assets_names)
+    assets_names = [asset.name for asset in assets]
+    assets_prices = binance_client.get_assets_prices(assets_names=set(assets_names))
+    daily_pnl = binance_client.get_daily_pnl(assets_names=set(assets_names))
+
+    grouped_info = defaultdict(int)
+    for asset in assets:
+        grouped_info[f"number_{asset.name}"] += asset.number
 
     result = []
 
-    for asset in assets:
+    for asset_name in set(assets_names):
+        current_assets_price = assets_prices.get(f"{asset_name}USDT", 0)
+        pnl_info = daily_pnl.get(f"{asset_name}USDT", 0)
         result.append({
-            'id': asset.pk,
-            'currency': asset.currency,
-            'number': asset.number,
-            'total_sum': 1,  # assets_prices[asset.name] * asset.number,
-            'name': asset.name,
-            'full_name': asset.name,
-            'transaction_date': asset.transaction_date,
-            'daily_pnl': "test",
-            'created_at': asset.created_at,
-            'updated_at': asset.updated_at,
+            'currency': "USD",
+            'number': round(grouped_info[f"number_{asset_name}"], 5),
+            'total_sum': round(current_assets_price * grouped_info[f"number_{asset_name}"], 3),
+            'name': asset_name,
+            'full_name': asset_name,
+            'daily_pnl': round(pnl_info and pnl_info['price_change'] * grouped_info[f"number_{asset_name}"], 3),
+            'daily_percent_pnl': pnl_info and pnl_info['price_change_percent'],
         })
 
     return result
@@ -130,3 +140,9 @@ def get_last_asset_id(assets: list, limit: int):
 
 def get_all_currencies() -> List[str]:
     return CURRENCIES
+
+
+async def get_tickers():
+    available_tickers = binance_client.get_available_tickers()
+    result = [ticker[:-4] for ticker in available_tickers]
+    return result

@@ -25,8 +25,10 @@ class AssetResponse(BaseModel):
     price: float
     name: str
     currency: str
-    daily_pnl: str
-    total_pnl: str
+    daily_pnl: float
+    total_pnl: float
+    daily_percent_pnl: float
+    total_sum: float
     average_price: float
 
 
@@ -53,16 +55,13 @@ class ExpensesQueryFilters(BaseModel):
 
 
 class AssetData(BaseModel):
-    id: int
     currency: str
     total_sum: float
     full_name: str
     number: float
     name: str
-    daily_pnl: str
-    transaction_date: Optional[datetime]
-    created_at: datetime
-    updated_at: datetime
+    daily_pnl: float
+    daily_percent_pnl: float
 
 
 class AssetsListData(BaseModel):
@@ -91,3 +90,7 @@ class CategoriedListData(BaseModel):
 
 class CurrenciesListData(BaseModel):
     data: List[str]
+
+
+class TickersListData(BaseModel):
+    tickers: List[str]

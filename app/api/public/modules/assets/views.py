@@ -1,20 +1,16 @@
 import os
 
-from app.api.public.modules.assets.serializers import (AssetResponse,
-                                                       AssetsListData,
-                                                       CreateAssetRequest,
-                                                       CurrenciesListData,
-                                                       ExpensesQueryFilters,
-                                                       Pagination, AssetHistoryResponse, AssetHistoryListResponse)
+from app.api.public.modules.assets.serializers import (
+    AssetHistoryListResponse, AssetResponse, AssetsListData,
+    CreateAssetRequest, CurrenciesListData, ExpensesQueryFilters, Pagination, TickersListData)
 from app.core.modules.assets.models import User
 from app.core.modules.assets.services import (create_asset, delete_asset,
                                               get_all_currencies, get_asset,
-                                              get_assets, get_last_asset_id, get_asset_history)
+                                              get_asset_history, get_assets,
+                                              get_last_asset_id, get_tickers)
 from app.core.modules.users.auth import user_auth_check
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from starlette import status
-from starlette.responses import Response
-from fastapi import FastAPI, Response
 
 router = APIRouter()
 
@@ -53,7 +49,6 @@ async def router_create_asset(
         transaction_date=request_data.transaction_date,
     )
     r = Response(status_code=status.HTTP_204_NO_CONTENT)
-    r.headers["Access-Control-Allow-Origin"] = os.environ["host"]
     return r
 
 
@@ -156,3 +151,18 @@ async def router_get_assets(
 
     messages, next_id = get_last_asset_id(messages, pagination.limit)
     return AssetsListData(messages=messages, next_id=next_id)
+
+
+@router.get(
+    "/tickers/",
+    tags=["asset"],
+    summary="Get list of available tickers",
+    response_model=TickersListData,
+    status_code=status.HTTP_200_OK,
+)
+async def router_get_assets(
+        user: User = Depends(user_auth_check),
+):
+    tickers = await get_tickers()
+
+    return TickersListData(tickers=tickers)
