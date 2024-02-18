@@ -3,9 +3,9 @@ config = {
                 "default": {
                     "engine": "tortoise.backends.asyncpg",
                     "credentials": {
-                        "port": 5432,
+                        "port": 7434,
                         "database": "telegram_bot",
-                        "host": "postgers",
+                        "host": "localhost",
                         "user": "telegram_bot",
                         "password": "password",
                     }
